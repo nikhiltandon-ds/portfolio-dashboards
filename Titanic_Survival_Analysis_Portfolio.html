@@ -1,0 +1,1648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Titanic Survival Analysis | Python Portfolio</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+/* ═══════════════════════════════════
+   DESIGN TOKENS — Python/Data Science
+═══════════════════════════════════ */
+:root {
+  --bg:        #090D16;
+  --card:      #0F1825;
+  --surface:   #162030;
+  --surface2:  #1A2840;
+  --py-gold:   #FFD43B;
+  --py-blue:   #3776AB;
+  --accent:    #38BDF8;
+  --survived:  #10B981;
+  --died:      #F43F5E;
+  --ml:        #A855F7;
+  --warn:      #F59E0B;
+  --text-1:    #EEF4FF;
+  --text-2:    #8BA0BB;
+  --text-3:    #3D5470;
+  --border:    #1C2E45;
+  --glow-g:    rgba(16,185,129,0.15);
+  --glow-r:    rgba(244,63,94,0.15);
+  --glow-a:    rgba(56,189,248,0.12);
+  --radius:    12px;
+  --radius-lg: 18px;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg);
+  color: var(--text-1);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ambient gradients */
+body::before {
+  content:'';
+  position:fixed; inset:0;
+  background:
+    radial-gradient(ellipse 70% 50% at 15% 5%,  rgba(55,118,171,0.07) 0%, transparent 55%),
+    radial-gradient(ellipse 50% 40% at 85% 85%, rgba(168,85,247,0.05)  0%, transparent 55%),
+    radial-gradient(ellipse 40% 30% at 50% 50%, rgba(16,185,129,0.03)  0%, transparent 55%);
+  pointer-events:none; z-index:0;
+}
+
+.wrap { position:relative; z-index:1; max-width:1360px; margin:0 auto; padding:0 24px 72px; }
+
+/* ─── HERO ─── */
+.hero {
+  padding: 60px 0 44px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 36px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 32px;
+  align-items: start;
+}
+
+.hero-eyebrow {
+  display: inline-flex; align-items: center; gap:10px;
+  background: rgba(255,212,59,0.08);
+  border: 1px solid rgba(255,212,59,0.22);
+  border-radius: 100px;
+  padding: 6px 16px;
+  font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing:0.1em;
+  color: var(--py-gold);
+  margin-bottom: 22px;
+}
+
+.hero-eyebrow .dot {
+  width:6px; height:6px; border-radius:50%;
+  background: var(--py-gold);
+  box-shadow: 0 0 8px var(--py-gold);
+  animation: blink 2.4s ease-in-out infinite;
+}
+
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+.hero-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(26px, 3.8vw, 50px);
+  font-weight: 700;
+  line-height: 1.08;
+  letter-spacing: -0.025em;
+  background: linear-gradient(140deg, #EEF4FF 0%, #38BDF8 50%, #A855F7 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 14px;
+}
+
+.hero-sub {
+  font-size: 15px; color: var(--text-2);
+  max-width: 520px; line-height: 1.7;
+  margin-bottom: 28px;
+}
+
+.hero-stats {
+  display: flex; gap: 28px; flex-wrap: wrap;
+}
+
+.h-stat { }
+.h-stat-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 22px; font-weight: 600;
+  line-height: 1;
+  margin-bottom: 3px;
+}
+
+.h-stat-label { font-size: 11px; color: var(--text-3); text-transform:uppercase; letter-spacing:0.06em; }
+
+.hero-notebook {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-2);
+  min-width: 280px;
+  flex-shrink: 0;
+}
+
+.nb-bar {
+  display: flex; gap: 6px; margin-bottom: 12px;
+}
+
+.nb-dot { width:10px; height:10px; border-radius:50%; }
+.nb-dot.r { background:#EF4444; } .nb-dot.y { background:#F59E0B; } .nb-dot.g { background:#10B981; }
+
+.nb-label { font-size:10px; color:var(--text-3); margin-bottom:4px; }
+.nb-line  { color: var(--text-2); line-height:1.8; }
+.nb-kw    { color:#A78BFA; }
+.nb-fn    { color:#38BDF8; }
+.nb-str   { color:#86EFAC; }
+.nb-cm    { color:#4B6380; font-style:italic; }
+.nb-num   { color:#FCA5A5; }
+.nb-out   { color:#FCD34D; }
+
+/* ─── TAGS ─── */
+.tags { display:flex; flex-wrap:wrap; gap:7px; margin-bottom:36px; }
+
+.tag {
+  padding: 4px 11px; border-radius:6px;
+  font-size: 11px; font-weight:600;
+  text-transform:uppercase; letter-spacing:0.06em;
+  border:1px solid;
+}
+
+.tg  { background:rgba(16,185,129,0.09);  border-color:rgba(16,185,129,0.28); color:#34D399; }
+.tb  { background:rgba(56,189,248,0.09);  border-color:rgba(56,189,248,0.28); color:#7DD3FC; }
+.tp  { background:rgba(168,85,247,0.09);  border-color:rgba(168,85,247,0.28); color:#C084FC; }
+.ty  { background:rgba(255,212,59,0.09);  border-color:rgba(255,212,59,0.28); color:#FDE68A; }
+.tr  { background:rgba(244,63,94,0.09);   border-color:rgba(244,63,94,0.28);  color:#FDA4AF; }
+.to  { background:rgba(245,158,11,0.09);  border-color:rgba(245,158,11,0.28); color:#FCD34D; }
+
+/* ─── SECTION DIVIDER ─── */
+.sec-head {
+  display: flex; align-items:center; gap:12px;
+  margin-bottom: 20px; margin-top: 48px;
+}
+
+.sec-icon { font-size:18px; }
+.sec-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 11px; font-weight:700;
+  text-transform:uppercase; letter-spacing:0.1em;
+  color: var(--text-3);
+}
+
+.sec-head::after { content:''; flex:1; height:1px; background:var(--border); }
+
+/* ─── CARDS ─── */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  position: relative; overflow:hidden;
+}
+
+.card-title { font-size:14px; font-weight:700; color:var(--text-1); margin-bottom:4px; }
+.card-sub   { font-size:12px; color:var(--text-3); }
+
+/* ─── KPI GRID ─── */
+.kpi-row { display:grid; grid-template-columns:repeat(6,1fr); gap:14px; margin-bottom:20px; }
+
+.kpi {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 18px;
+  position:relative; overflow:hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.kpi:hover { transform:translateY(-2px); }
+
+.kpi::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; border-radius:12px 12px 0 0; }
+.kpi.g::before  { background:var(--survived); }
+.kpi.r::before  { background:var(--died); }
+.kpi.b::before  { background:var(--accent); }
+.kpi.p::before  { background:var(--ml); }
+.kpi.y::before  { background:var(--py-gold); }
+.kpi.o::before  { background:var(--warn); }
+
+.kpi-lbl { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-3); margin-bottom:8px; }
+.kpi-val { font-family:'JetBrains Mono',monospace; font-size:24px; font-weight:600; line-height:1; margin-bottom:6px; }
+.kpi.g .kpi-val { color:#34D399; }
+.kpi.r .kpi-val { color:#FB7185; }
+.kpi.b .kpi-val { color:#7DD3FC; }
+.kpi.p .kpi-val { color:#C084FC; }
+.kpi.y .kpi-val { color:#FDE68A; }
+.kpi.o .kpi-val { color:#FCD34D; }
+.kpi-hint { font-size:11px; color:var(--text-3); }
+
+.pill-g  { background:rgba(16,185,129,0.12); color:#34D399; border:1px solid rgba(16,185,129,0.25); padding:2px 8px; border-radius:100px; font-size:11px; font-weight:600; display:inline-flex; align-items:center; gap:4px; }
+.pill-r  { background:rgba(244,63,94,0.12);  color:#FB7185; border:1px solid rgba(244,63,94,0.25);  padding:2px 8px; border-radius:100px; font-size:11px; font-weight:600; display:inline-flex; align-items:center; gap:4px; }
+
+/* ─── CHART GRIDS ─── */
+.g2 { display:grid; grid-template-columns:1fr 1fr;       gap:18px; margin-bottom:18px; }
+.g3 { display:grid; grid-template-columns:1.4fr 1fr 1fr; gap:18px; margin-bottom:18px; }
+.g21{ display:grid; grid-template-columns:2fr 1fr;        gap:18px; margin-bottom:18px; }
+
+.span2 { grid-column: 1 / -1; }
+
+.card-header { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:18px; }
+.badge { font-size:10px; font-weight:700; padding:3px 9px; border-radius:5px; white-space:nowrap; border:1px solid; }
+.bg  { color:#7DD3FC; border-color:rgba(56,189,248,0.25); background:rgba(56,189,248,0.08); }
+.bp  { color:#C084FC; border-color:rgba(168,85,247,0.25); background:rgba(168,85,247,0.08); }
+.bgg { color:#34D399;  border-color:rgba(16,185,129,0.25);  background:rgba(16,185,129,0.08); }
+.by  { color:#FDE68A; border-color:rgba(255,212,59,0.25); background:rgba(255,212,59,0.08); }
+.br  { color:#FB7185; border-color:rgba(244,63,94,0.25);  background:rgba(244,63,94,0.08); }
+
+.chart-box { position:relative; }
+.chart-box canvas { max-height:240px; }
+.chart-box.tall canvas { max-height:280px; }
+
+/* ─── PROGRESS BARS ─── */
+.prog-list { display:flex; flex-direction:column; gap:12px; }
+.prog-row  { }
+.prog-meta { display:flex; justify-content:space-between; align-items:center; margin-bottom:5px; }
+.prog-name { font-size:13px; color:var(--text-2); font-weight:500; }
+.prog-pct  { font-size:12px; font-family:'JetBrains Mono',monospace; color:var(--text-3); }
+.prog-bg   { height:8px; background:var(--surface); border-radius:100px; overflow:hidden; }
+.prog-fill { height:100%; border-radius:100px; }
+
+/* ─── CORRELATION HEATMAP ─── */
+.heatmap-wrap { overflow-x:auto; }
+.heatmap-grid { display:inline-grid; gap:3px; }
+.hm-cell {
+  width:46px; height:46px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:9.5px; font-family:'JetBrains Mono',monospace;
+  font-weight:600; border-radius:5px;
+  transition: transform 0.15s;
+}
+.hm-cell:hover { transform:scale(1.15); z-index:10; position:relative; }
+.hm-label {
+  width:46px; height:46px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:8.5px; color:var(--text-3);
+  font-family:'JetBrains Mono',monospace;
+  text-align:center; line-height:1.2;
+}
+.hm-label.row { justify-content:flex-end; padding-right:6px; width:80px; }
+
+/* ─── NOTEBOOK CELLS ─── */
+.nb-section { margin-bottom:18px; }
+
+.nb-cell {
+  background: #0D1117;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.nb-cell-header {
+  display:flex; align-items:center; gap:10px;
+  padding: 8px 14px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.nb-in-label {
+  font-family:'JetBrains Mono',monospace;
+  font-size:10px; color:var(--py-gold); font-weight:600;
+}
+
+.nb-lang { font-size:10px; color:var(--text-3); }
+.nb-copy-hint { margin-left:auto; font-size:10px; color:var(--text-3); }
+
+.nb-code {
+  padding: 16px 18px;
+  font-family:'JetBrains Mono',monospace;
+  font-size:12.5px; line-height:1.85;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+.nb-output {
+  padding: 12px 18px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  font-family:'JetBrains Mono',monospace;
+  font-size:12px; color: var(--text-2);
+  line-height: 1.7;
+}
+
+.nb-out-label {
+  font-size:10px; color:var(--text-3);
+  margin-bottom:6px; display:block;
+}
+
+/* syntax tokens */
+.k  { color:#C084FC; }   /* keyword */
+.fn { color:#38BDF8; }   /* function */
+.s  { color:#86EFAC; }   /* string */
+.c  { color:#4B6380; font-style:italic; } /* comment */
+.n  { color:#FCA5A5; }   /* number */
+.o  { color:#FDE68A; }   /* operator */
+.v  { color:#93C5FD; }   /* variable */
+.p  { color:#CBD5E1; }   /* punctuation */
+.m  { color:#F9A8D4; }   /* method/attribute */
+.t  { color:#6EE7B7; }   /* type */
+
+/* ─── SURVIVAL COMPARISON ─── */
+.compare-pair {
+  display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;
+}
+
+.compare-box {
+  border-radius:10px; padding:16px;
+  text-align:center; border:1px solid;
+}
+
+.compare-box.g { background:rgba(16,185,129,0.07); border-color:rgba(16,185,129,0.2); }
+.compare-box.r { background:rgba(244,63,94,0.07);  border-color:rgba(244,63,94,0.2); }
+
+.compare-box .rate { font-family:'JetBrains Mono',monospace; font-size:26px; font-weight:700; line-height:1; margin-bottom:4px; }
+.compare-box.g .rate { color:#34D399; }
+.compare-box.r .rate { color:#FB7185; }
+.compare-box .label  { font-size:12px; color:var(--text-2); }
+.compare-box .sub    { font-size:10px; color:var(--text-3); margin-top:4px; }
+
+/* ─── ML SECTION ─── */
+.ml-pipeline {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0;
+  margin: 24px 0;
+  position: relative;
+}
+
+.ml-pipeline::before {
+  content:'';
+  position: absolute;
+  top: 28px; left: 10%; right: 10%;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent) 0%, var(--ml) 100%);
+  z-index: 0;
+}
+
+.ml-step {
+  display:flex; flex-direction:column; align-items:center;
+  position:relative; z-index:1;
+  padding: 0 8px;
+}
+
+.ml-step-icon {
+  width:52px; height:52px;
+  border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:20px;
+  border: 2px solid var(--border);
+  background: var(--card);
+  margin-bottom:10px;
+}
+
+.ml-step-icon.active { border-color:var(--accent); background:rgba(56,189,248,0.1); box-shadow:0 0 16px rgba(56,189,248,0.2); }
+.ml-step-title { font-size:11px; font-weight:600; text-align:center; color:var(--text-2); }
+.ml-step-sub   { font-size:10px; color:var(--text-3); text-align:center; margin-top:3px; }
+
+/* model comparison table */
+.model-table {
+  width:100%; border-collapse:collapse;
+}
+
+.model-table th {
+  font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em;
+  color:var(--text-3); padding:10px 14px;
+  border-bottom: 1px solid var(--border); text-align:left;
+}
+
+.model-table td {
+  padding:12px 14px; border-bottom:1px solid rgba(28,46,69,0.5);
+  font-size:13px; color:var(--text-2); vertical-align:middle;
+}
+
+.model-table tr:hover td { background:rgba(56,189,248,0.03); }
+.model-table tr.best-row td { color:var(--text-1); }
+
+.model-name { font-weight:600; font-size:13px; }
+.acc-bar-bg { height:6px; background:var(--surface); border-radius:100px; overflow:hidden; min-width:80px; margin-top:4px; }
+.acc-bar-fill { height:100%; border-radius:100px; }
+.best-badge { background:rgba(255,212,59,0.12); color:var(--py-gold); border:1px solid rgba(255,212,59,0.25); font-size:10px; font-weight:700; padding:2px 8px; border-radius:5px; display:inline-block; }
+.metric-val { font-family:'JetBrains Mono',monospace; font-weight:600; }
+.metric-g { color:#34D399; } .metric-b { color:#7DD3FC; } .metric-p { color:#C084FC; }
+
+/* confusion matrix */
+.cm-grid {
+  display:grid; grid-template-columns:auto 1fr 1fr;
+  grid-template-rows: auto 1fr 1fr;
+  gap:4px; margin:0 auto;
+}
+
+.cm-cell {
+  padding:14px; border-radius:8px;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  text-align:center;
+}
+
+.cm-label { font-size:10px; color:var(--text-3); display:flex; align-items:center; justify-content:center; }
+
+.cm-tp { background:rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.3); }
+.cm-tn { background:rgba(16,185,129,0.10); border:1px solid rgba(16,185,129,0.2); }
+.cm-fp { background:rgba(244,63,94,0.10);  border:1px solid rgba(244,63,94,0.2); }
+.cm-fn { background:rgba(244,63,94,0.10);  border:1px solid rgba(244,63,94,0.2); }
+
+.cm-val { font-family:'JetBrains Mono',monospace; font-size:28px; font-weight:700; line-height:1; }
+.cm-tp .cm-val,.cm-tn .cm-val { color:#34D399; }
+.cm-fp .cm-val,.cm-fn .cm-val { color:#FB7185; }
+.cm-name { font-size:10px; color:var(--text-3); margin-top:4px; }
+
+/* ─── INSIGHT CARDS ─── */
+.insight-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:18px; }
+
+.insight-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  position:relative; overflow:hidden;
+}
+
+.insight-card::before {
+  content:''; position:absolute;
+  left:0; top:0; bottom:0; width:3px;
+  border-radius:12px 0 0 12px;
+}
+
+.insight-card.ig::before { background:var(--survived); }
+.insight-card.ib::before { background:var(--accent); }
+.insight-card.ip::before { background:var(--ml); }
+.insight-card.iy::before { background:var(--py-gold); }
+.insight-card.ir::before { background:var(--died); }
+.insight-card.io::before { background:var(--warn); }
+
+.insight-icon { font-size:20px; margin-bottom:10px; }
+.insight-title { font-size:13px; font-weight:700; color:var(--text-1); margin-bottom:8px; }
+.insight-body  { font-size:12.5px; color:var(--text-2); line-height:1.65; }
+.insight-body strong { color:var(--text-1); font-weight:600; }
+
+/* ─── BIZ RECS ─── */
+.biz-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:16px; margin-bottom:18px; }
+
+.biz-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  display:flex; align-items:flex-start; gap:14px;
+}
+
+.biz-num {
+  font-family:'JetBrains Mono',monospace;
+  font-size:22px; font-weight:700;
+  line-height:1; flex-shrink:0;
+  padding-top:2px;
+}
+
+.biz-num.g { color:var(--survived); } .biz-num.b { color:var(--accent); }
+.biz-num.p { color:var(--ml); }       .biz-num.y { color:var(--py-gold); }
+.biz-num.r { color:var(--died); }     .biz-num.o { color:var(--warn); }
+
+.biz-content { flex:1; }
+.biz-title { font-size:13px; font-weight:700; color:var(--text-1); margin-bottom:6px; }
+.biz-text  { font-size:12.5px; color:var(--text-2); line-height:1.6; }
+.biz-text strong { color:var(--text-1); }
+
+/* ─── DATASET TABLE ─── */
+.ds-table { width:100%; border-collapse:collapse; font-size:12px; }
+.ds-table th { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-3); padding:8px 12px; border-bottom:1px solid var(--border); text-align:left; }
+.ds-table td { padding:10px 12px; border-bottom:1px solid rgba(28,46,69,0.4); color:var(--text-2); font-family:'JetBrains Mono',monospace; font-size:11.5px; }
+.ds-table tr:hover td { background:rgba(56,189,248,0.03); }
+.ds-type-num { color:#7DD3FC; } .ds-type-obj { color:#C084FC; } .ds-type-cat { color:#FDE68A; }
+.ds-miss-high { color:#FB7185; } .ds-miss-low { color:#34D399; } .ds-miss-med { color:#FCD34D; }
+
+/* ─── FOOTER ─── */
+.footer {
+  border-top:1px solid var(--border);
+  padding-top:32px;
+  display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;
+}
+
+.footer-left h3 { font-size:15px; font-weight:700; margin-bottom:4px; }
+.footer-left p  { font-size:12px; color:var(--text-3); }
+.footer-tools   { display:flex; gap:8px; flex-wrap:wrap; }
+.ftool {
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px; font-weight:600;
+  padding:5px 12px; border-radius:7px; border:1px solid var(--border);
+  color:var(--text-3);
+}
+
+/* ─── RESPONSIVE ─── */
+@media(max-width:1000px) { .g3,.g21 { grid-template-columns:1fr; } }
+@media(max-width:860px)  {
+  .hero  { grid-template-columns:1fr; }
+  .kpi-row { grid-template-columns:repeat(3,1fr); }
+  .g2 { grid-template-columns:1fr; }
+  .insight-grid,.biz-grid { grid-template-columns:1fr; }
+  .ml-pipeline { grid-template-columns:1fr; }
+  .ml-pipeline::before { display:none; }
+}
+
+@media(max-width:540px) {
+  .kpi-row { grid-template-columns:1fr 1fr; }
+  .compare-pair { grid-template-columns:1fr; }
+}
+
+/* ─── ANIMATION ─── */
+.fade { opacity:0; transform:translateY(14px); animation:fu 0.55s ease forwards; }
+.fade:nth-child(1){animation-delay:.04s} .fade:nth-child(2){animation-delay:.08s}
+.fade:nth-child(3){animation-delay:.12s} .fade:nth-child(4){animation-delay:.16s}
+.fade:nth-child(5){animation-delay:.20s} .fade:nth-child(6){animation-delay:.24s}
+@keyframes fu { to{opacity:1;transform:translateY(0)} }
+
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ════════════════════════════════
+     HERO
+════════════════════════════════ -->
+<header class="hero">
+  <div>
+    <div class="hero-eyebrow">
+      <span class="dot"></span>
+      Python Portfolio · Exploratory Data Analysis · Machine Learning
+    </div>
+    <h1 class="hero-title">Titanic Survival<br>Analysis</h1>
+    <p class="hero-sub">Complete end-to-end data science project — from raw CSV to machine learning predictions. Explores what determined survival aboard the Titanic using real passenger data, statistical analysis, feature engineering, and ML modelling.</p>
+    <div class="hero-stats">
+      <div class="h-stat">
+        <div class="h-stat-val" style="color:#7DD3FC;">891</div>
+        <div class="h-stat-label">Passengers</div>
+      </div>
+      <div class="h-stat">
+        <div class="h-stat-val" style="color:#34D399;">38.4%</div>
+        <div class="h-stat-label">Survival Rate</div>
+      </div>
+      <div class="h-stat">
+        <div class="h-stat-val" style="color:#C084FC;">13</div>
+        <div class="h-stat-label">Features</div>
+      </div>
+      <div class="h-stat">
+        <div class="h-stat-val" style="color:#FDE68A;">83.7%</div>
+        <div class="h-stat-label">Model Accuracy</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- mini notebook preview -->
+  <div class="hero-notebook">
+    <div class="nb-bar">
+      <div class="nb-dot r"></div><div class="nb-dot y"></div><div class="nb-dot g"></div>
+      <span style="margin-left:6px;font-size:10px;color:var(--text-3);">Titanic_Survival_Analysis.ipynb</span>
+    </div>
+    <div class="nb-label">In [1]:</div>
+    <div class="nb-line"><span class="k">import</span> pandas <span class="k">as</span> pd</div>
+    <div class="nb-line"><span class="k">import</span> numpy <span class="k">as</span> np</div>
+    <div class="nb-line"><span class="k">import</span> seaborn <span class="k">as</span> sns</div>
+    <div class="nb-line"><span class="k">from</span> sklearn<span class="m">.ensemble</span> <span class="k">import</span> RandomForestClassifier</div>
+    <div style="height:8px;"></div>
+    <div class="nb-label">In [2]:</div>
+    <div class="nb-line">df <span class="o">=</span> pd<span class="m">.read_csv</span>(<span class="s">"titanic.csv"</span>)</div>
+    <div class="nb-line">df<span class="m">.shape</span></div>
+    <div style="height:4px;"></div>
+    <div class="nb-line" style="color:#FDE68A;">Out [2]: (891, 13)</div>
+  </div>
+</header>
+
+<!-- SKILL TAGS -->
+<div class="tags">
+  <span class="tag tg">Python 3</span>
+  <span class="tag tb">Pandas</span>
+  <span class="tag tp">NumPy</span>
+  <span class="tag ty">Seaborn</span>
+  <span class="tag tr">Matplotlib</span>
+  <span class="tag to">Scikit-learn</span>
+  <span class="tag tg">EDA</span>
+  <span class="tag tb">Feature Engineering</span>
+  <span class="tag tp">Machine Learning</span>
+  <span class="tag ty">Data Cleaning</span>
+  <span class="tag tr">Classification</span>
+  <span class="tag to">Statistical Analysis</span>
+  <span class="tag tg">Data Visualisation</span>
+  <span class="tag tb">Jupyter Notebook</span>
+</div>
+
+<!-- ════════════════════════════════
+     EDA DASHBOARD — KPI CARDS
+════════════════════════════════ -->
+<div class="sec-head">
+  <span class="sec-icon">⚡</span>
+  <h2 class="sec-title">EDA Dashboard — Key Statistics</h2>
+</div>
+
+<div class="kpi-row">
+  <div class="kpi b fade">
+    <div class="kpi-lbl">Total Passengers</div>
+    <div class="kpi-val" id="k1">0</div>
+    <div class="kpi-hint">RangeIndex: 0 → 890</div>
+  </div>
+  <div class="kpi g fade">
+    <div class="kpi-lbl">Survivors</div>
+    <div class="kpi-val" id="k2">0</div>
+    <div class="kpi-hint"><span class="pill-g">↑ 38.4%</span></div>
+  </div>
+  <div class="kpi r fade">
+    <div class="kpi-lbl">Deceased</div>
+    <div class="kpi-val" id="k3">0</div>
+    <div class="kpi-hint"><span class="pill-r">↓ 61.6%</span></div>
+  </div>
+  <div class="kpi y fade">
+    <div class="kpi-lbl">Avg Age</div>
+    <div class="kpi-val">29.7</div>
+    <div class="kpi-hint">177 values imputed</div>
+  </div>
+  <div class="kpi o fade">
+    <div class="kpi-lbl">Avg Fare</div>
+    <div class="kpi-val">$32.2</div>
+    <div class="kpi-hint">Max: $512.33</div>
+  </div>
+  <div class="kpi p fade">
+    <div class="kpi-lbl">Features Used</div>
+    <div class="kpi-val">10</div>
+    <div class="kpi-hint">After Cabin drop</div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     SECTION 1 — SURVIVAL BY GENDER
+════════════════════════════════ -->
+<div class="sec-head">
+  <span class="sec-icon">♀♂</span>
+  <h2 class="sec-title">Section 1 — Survival by Gender</h2>
+</div>
+
+<div class="g3">
+  <div class="card">
+    <div class="card-header">
+      <div><div class="card-title">Survival Rate by Gender</div><div class="card-sub">Female vs Male survival probability</div></div>
+      <span class="badge bg">sns.barplot</span>
+    </div>
+    <div class="chart-box"><canvas id="genderChart"></canvas></div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div><div class="card-title">Gender Breakdown</div><div class="card-sub">Count by sex in dataset</div></div>
+    </div>
+    <div class="compare-pair">
+      <div class="compare-box g">
+        <div class="rate">74.2%</div>
+        <div class="label">♀ Female</div>
+        <div class="sub">233 of 314 survived</div>
+      </div>
+      <div class="compare-box r">
+        <div class="rate">18.9%</div>
+        <div class="label">♂ Male</div>
+        <div class="sub">109 of 577 survived</div>
+      </div>
+    </div>
+    <div style="margin-top:14px;" class="prog-list">
+      <div class="prog-row">
+        <div class="prog-meta"><span class="prog-name">♀ Female (35.2%)</span><span class="prog-pct">314 passengers</span></div>
+        <div class="prog-bg"><div class="prog-fill" style="width:35.2%;background:linear-gradient(90deg,#10B981,#34D399);"></div></div>
+      </div>
+      <div class="prog-row">
+        <div class="prog-meta"><span class="prog-name">♂ Male (64.8%)</span><span class="prog-pct">577 passengers</span></div>
+        <div class="prog-bg"><div class="prog-fill" style="width:64.8%;background:linear-gradient(90deg,#3B82F6,#7DD3FC);"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div><div class="card-title">📌 Insight</div><div class="card-sub">Analysis finding</div></div>
+    </div>
+    <div style="margin-bottom:14px;">
+      <div style="font-size:32px;font-weight:800;font-family:'JetBrains Mono',monospace;color:#34D399;line-height:1;">3.9×</div>
+      <div style="font-size:12px;color:var(--text-3);margin-top:4px;">Female vs Male survival multiplier</div>
+    </div>
+    <p style="font-size:13px;color:var(--text-2);line-height:1.7;">Females had a <strong style="color:var(--text-1)">3.9× higher survival rate</strong> than males — <strong style="color:#34D399;">74.2%</strong> vs <strong style="color:#FB7185;">18.9%</strong>. The <em>"Women and children first"</em> lifeboat evacuation policy was strictly followed, making Sex the single strongest predictor of survival in this dataset.</p>
+
+    <div style="margin-top:16px;" class="nb-cell">
+      <div class="nb-cell-header">
+        <span class="nb-in-label">In [5]</span>
+        <span class="nb-lang">python</span>
+      </div>
+      <div class="nb-code"><span class="v">df</span><span class="p">.</span><span class="fn">groupby</span><span class="p">(</span><span class="s">"Sex"</span><span class="p">)[</span><span class="s">"Survived"</span><span class="p">].</span><span class="fn">mean</span><span class="p">()</span>
+<span class="c"># Sex: 0=male, 1=female (encoded)</span>
+<span class="c"># Females: higher survival → priority evacuation</span></div>
+      <div class="nb-output">
+        <span class="nb-out-label">Out [5]:</span>
+Sex<br>0 &nbsp;&nbsp; 0.188908  <span style="color:#4B6380;"> # male</span><br>1 &nbsp;&nbsp; 0.742038  <span style="color:#4B6380;"> # female</span><br>Name: Survived, dtype: float64
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     SECTION 2 — SURVIVAL BY CLASS
+════════════════════════════════ -->
+<div class="sec-head">
+  <span class="sec-icon">🎫</span>
+  <h2 class="sec-title">Section 2 — Survival by Passenger Class</h2>
+</div>
+
+<div class="g3">
+  <div class="card">
+    <div class="card-header">
+      <div><div class="card-title">Survival Rate by Passenger Class</div><div class="card-sub">1st, 2nd, 3rd class survival probability</div></div>
+      <span class="badge bp">sns.barplot</span>
+    </div>
+    <div class="chart-box"><canvas id="classChart"></canvas></div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div><div class="card-title">Class Distribution</div><div class="card-sub">Passenger count per class</div></div>
+    </div>
+    <div class="prog-list" style="margin-bottom:16px;">
+      <div class="prog-row">
+        <div class="prog-meta"><span class="prog-name">🥇 1st Class — 62.9%</span><span class="prog-pct">216 pass.</span></div>
+        <div class="prog-bg"><div class="prog-fill" style="width:62.9%;background:linear-gradient(90deg,#FFD43B,#FDE68A);"></div></div>
+      </div>
+      <div class="prog-row">
+        <div class="prog-meta"><span class="prog-name">🥈 2nd Class — 47.3%</span><span class="prog-pct">184 pass.</span></div>
+        <div class="prog-bg"><div class="prog-fill" style="width:47.3%;background:linear-gradient(90deg,#38BDF8,#7DD3FC);"></div></div>
+      </div>
+      <div class="prog-row">
+        <div class="prog-meta"><span class="prog-name">🥉 3rd Class — 24.2%</span><span class="prog-pct">491 pass.</span></div>
+        <div class="prog-bg"><div class="prog-fill" style="width:24.2%;background:linear-gradient(90deg,#F43F5E,#FB7185);"></div></div>
+      </div>
+    </div>
+    <div style="padding:12px;background:var(--surface);border-radius:8px;border:1px solid var(--border);">
+      <div style="font-size:10px;color:var(--text-3);margin-bottom:6px;">Avg Fare by Class</div>
+      <div style="display:flex;justify-content:space-between;">
+        <div style="text-align:center;"><div style="font-family:'JetBrains Mono',monospace;font-weight:600;color:#FDE68A;font-size:14px;">$84.15</div><div style="font-size:10px;color:var(--text-3);">1st Class</div></div>
+        <div style="text-align:center;"><div style="font-family:'JetBrains Mono',monospace;font-weight:600;color:#7DD3FC;font-size:14px;">$20.66</div><div style="font-size:10px;color:var(--text-3);">2nd Class</div></div>
+        <div style="text-align:center;"><div style="font-family:'JetBrains Mono',monospace;font-weight:600;color:#FB7185;font-size:14px;">$13.68</div><div style="font-size:10px;color:var(--text-3);">3rd Class</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><div><div class="card-title">📌 Insight</div></div></div>
+    <div style="font-size:32px;font-weight:800;font-family:'JetBrains Mono',monospace;color:#C084FC;line-height:1;margin-bottom:4px;">-0.34</div>
+    <div style="font-size:11px;color:var(--text-3);margin-bottom:12px;">Pclass ↔ Survived Pearson Correlation</div>
+    <p style="font-size:13px;color:var(--text-2);line-height:1.7;margin-bottom:14px;">
+      A clear socioeconomic gradient in survival: <strong style="color:#FDE68A">1st class</strong> passengers were <strong style="color:var(--text-1)">2.6× more likely</strong> to survive than 3rd class passengers. Upper-deck cabin proximity to lifeboats, plus class-based crew prioritisation, explains the gap.
+    </p>
+    <div class="nb-cell">
+      <div class="nb-cell-header"><span class="nb-in-label">In [5]</span><span class="nb-lang">python</span></div>
+      <div class="nb-code"><span class="v">df</span><span class="p">.</span><span class="fn">groupby</span><span class="p">(</span><span class="s">"Pclass"</span><span class="p">)[</span><span class="s">"Survived"</span><span class="p">].</span><span class="fn">mean</span><span class="p">()</span></div>
+      <div class="nb-output"><span class="nb-out-label">Out [5]:</span>Pclass<br>1 &nbsp;&nbsp; 0.629630<br>2 &nbsp;&nbsp; 0.472826<br>3 &nbsp;&nbsp; 0.242363<br>Name: Survived, dtype: float64</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     SECTION 3 — FAMILY SIZE
+════════════════════════════════ -->
+<div class="sec-head">
+  <span class="sec-icon">👨‍👩‍👧‍👦</span>
+  <h2 class="sec-title">Section 3 — Family Size Impact</h2>
+</div>
+
+<div class="g2">
+  <div class="card">
+    <div class="card-header">
+      <div><div class="card-title">Survival Rate by Family Size</div><div class="card-sub">Family_Size = SibSp + Parch (feature engineered)</div></div>
+      <span class="badge bgg">sns.lineplot</span>
+    </div>
+    <div class="chart-box tall"><canvas id="familyChart"></canvas></div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div><div class="card-title">Feature Engineering — Family Size</div></div>
+    </div>
+    <p style="font-size:13px;color:var(--text-2);line-height:1.7;margin-bottom:16px;">
+      <strong style="color:var(--text-1)">Solo travellers (size 0)</strong> had only a <strong style="color:#FB7185;">30.4%</strong> survival rate — the isolation effect. Small families (1–3) had the best odds, peaking at <strong style="color:#34D399;">72.4%</strong> for size 3. Large families (5+) fared poorly — too many to coordinate escape effectively.
+    </p>
+
+    <div class="nb-cell" style="margin-bottom:14px;">
+      <div class="nb-cell-header"><span class="nb-in-label">In [10]</span><span class="nb-lang">python</span></div>
+      <div class="nb-code"><span class="c"># Feature Engineering: Family Size</span>
+<span class="v">df</span><span class="p">[</span><span class="s">"Family_Size"</span><span class="p">]</span> <span class="o">=</span> <span class="v">df</span><span class="p">[</span><span class="s">"SibSp"</span><span class="p">]</span> <span class="o">+</span> <span class="v">df</span><span class="p">[</span><span class="s">"Parch"</span><span class="p">]</span>
+<span class="c"># SibSp: siblings/spouses, Parch: parents/children</span>
+
+<span class="v">df</span><span class="p">.</span><span class="fn">groupby</span><span class="p">(</span><span class="s">"Family_Size"</span><span class="p">)[</span><span class="s">"Survived"</span><span class="p">].</span><span class="fn">mean</span><span class="p">()</span></div>
+      <div class="nb-output"><span class="nb-out-label">Out [10]:</span>Family_Size<br>0 &nbsp;&nbsp; 0.3035<br>1 &nbsp;&nbsp; 0.5526<br>2 &nbsp;&nbsp; 0.5785<br>3 &nbsp;&nbsp; 0.7241 &nbsp;<span style="color:#34D399;">← Peak</span><br>4 &nbsp;&nbsp; 0.2000<br>5 &nbsp;&nbsp; 0.1364<br>6 &nbsp;&nbsp; 0.3333<br>Name: Survived, dtype: float64</div>
+    </div>
+
+    <div style="background:var(--surface);border-radius:8px;border:1px solid var(--border);padding:12px;">
+      <div style="font-size:11px;color:var(--text-3);margin-bottom:8px;font-weight:600;">Sweet Spot Analysis</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center;">
+        <div><div style="font-size:16px;font-weight:700;color:#FB7185;font-family:'JetBrains Mono',monospace;">30.4%</div><div style="font-size:10px;color:var(--text-3);">Solo (0)</div></div>
+        <div><div style="font-size:16px;font-weight:700;color:#34D399;font-family:'JetBrains Mono',monospace;">72.4%</div><div style="font-size:10px;color:var(--text-3);">Family (3) ★</div></div>
+        <div><div style="font-size:16px;font-weight:700;color:#FCA5A5;font-family:'JetBrains Mono',monospace;">13.6%</div><div style="font-size:10px;color:var(--text-3);">Large (5+)</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     SECTION 4 — AGE GROUP
+════════════════════════════════ -->
+<div class="sec-head">
+  <span class="sec-icon">📅</span>
+  <h2 class="sec-title">Section 4 — Age Group Analysis</h2>
+</div>
+
+<div class="g21">
+  <div class="card">
+    <div class="card-header">
+      <div><div class="card-title">Survival Rate by Age Group</div><div class="card-sub">pd.cut(df["Age"], bins=[0,18,40,60,100]) — 4 buckets</div></div>
+      <span class="badge by">sns.barplot</span>
+    </div>
+    <div class="g2" style="margin-bottom:0;">
+      <div class="chart-box tall"><canvas id="ageGroupChart"></canvas></div>
+      <div>
+        <div class="chart-box"><canvas id="ageHistChart"></canvas></div>
+        <div style="margin-top:12px;font-size:12px;color:var(--text-2);line-height:1.6;">
+          Age distribution is roughly <strong style="color:var(--text-1)">bell-shaped</strong>, peaked at 20–30 years (mean 29.7). 177 missing values were imputed using <strong style="color:#FDE68A;">mean imputation</strong>.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><div><div class="card-title">📌 Age Insight</div></div></div>
+
+    <div class="nb-cell" style="margin-bottom:14px;">
+      <div class="nb-cell-header"><span class="nb-in-label">In [10]</span><span class="nb-lang">python</span></div>
+      <div class="nb-code"><span class="c"># Age Group Feature Engineering</span>
+<span class="v">df</span><span class="p">[</span><span class="s">"Age_Group"</span><span class="p">]</span> <span class="o">=</span> pd<span class="p">.</span><span class="fn">cut</span><span class="p">(</span>
+  <span class="v">df</span><span class="p">[</span><span class="s">"Age"</span><span class="p">]</span><span class="p">,</span>
+  bins<span class="o">=</span><span class="p">[</span><span class="n">0</span><span class="p">,</span><span class="n">18</span><span class="p">,</span><span class="n">40</span><span class="p">,</span><span class="n">60</span><span class="p">,</span><span class="n">100</span><span class="p">]</span>
+<span class="p">)</span>
+<span class="v">df</span><span class="p">.</span><span class="fn">groupby</span><span class="p">(</span><span class="s">"Age_Group"</span><span class="p">)[</span><span class="s">"Survived"</span><span class="p">].</span><span class="fn">mean</span><span class="p">()</span></div>
+      <div class="nb-output"><span class="nb-out-label">Out [10]:</span>Age_Group<br>(0, 18]   &nbsp; 0.5396 <span style="color:#34D399;">← highest</span><br>(18, 40]  &nbsp; 0.3603<br>(40, 60]  &nbsp; 0.3718<br>(60, 100] &nbsp; 0.2308 <span style="color:#FB7185;">← lowest</span></div>
+    </div>
+
+    <div class="prog-list">
+      <div class="prog-row">
+        <div class="prog-meta"><span class="prog-name">👶 Children (0–18)</span><span class="prog-pct">54.0%</span></div>
+        <div class="prog-bg"><div class="prog-fill" style="width:54%;background:linear-gradient(90deg,#10B981,#34D399);"></div></div>
+      </div>
+      <div class="prog-row">
+        <div class="prog-meta"><span class="prog-name">🧑 Adults (18–40)</span><span class="prog-pct">36.0%</span></div>
+        <div class="prog-bg"><div class="prog-fill" style="width:36%;background:linear-gradient(90deg,#38BDF8,#7DD3FC);"></div></div>
+      </div>
+      <div class="prog-row">
+        <div class="prog-meta"><span class="prog-name">🧔 Middle-aged (40–60)</span><span class="prog-pct">37.2%</span></div>
+        <div class="prog-bg"><div class="prog-fill" style="width:37.2%;background:linear-gradient(90deg,#A855F7,#C084FC);"></div></div>
+      </div>
+      <div class="prog-row">
+        <div class="prog-meta"><span class="prog-name">👴 Senior (60–100)</span><span class="prog-pct">23.1%</span></div>
+        <div class="prog-bg"><div class="prog-fill" style="width:23.1%;background:linear-gradient(90deg,#F43F5E,#FB7185);"></div></div>
+      </div>
+    </div>
+    <p style="font-size:12px;color:var(--text-2);margin-top:14px;line-height:1.6;">Children (0–18) were prioritised during evacuation — <strong style="color:#34D399;">54%</strong> survived. Seniors (60+) had the worst odds at just <strong style="color:#FB7185;">23.1%</strong>.</p>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     SECTION 5 — FARE ANALYSIS
+════════════════════════════════ -->
+<div class="sec-head">
+  <span class="sec-icon">💷</span>
+  <h2 class="sec-title">Section 5 — Fare Category Analysis</h2>
+</div>
+
+<div class="g3">
+  <div class="card">
+    <div class="card-header">
+      <div><div class="card-title">Survival by Fare Category</div><div class="card-sub">High_Fare = 1 if Fare > £50, else 0</div></div>
+      <span class="badge br">sns.barplot</span>
+    </div>
+    <div class="chart-box"><canvas id="fareChart"></canvas></div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><div><div class="card-title">Fare vs Survival Stats</div></div></div>
+    <div class="compare-pair" style="margin-bottom:14px;">
+      <div class="compare-box r">
+        <div class="rate">$22.1</div>
+        <div class="label">Non-survivor avg fare</div>
+      </div>
+      <div class="compare-box g">
+        <div class="rate">$48.4</div>
+        <div class="label">Survivor avg fare</div>
+      </div>
+    </div>
+    <div class="nb-cell">
+      <div class="nb-cell-header"><span class="nb-in-label">In [5]</span><span class="nb-lang">python</span></div>
+      <div class="nb-code"><span class="v">df</span><span class="p">.</span><span class="fn">groupby</span><span class="p">(</span><span class="s">"Survived"</span><span class="p">)[</span><span class="s">"Fare"</span><span class="p">].</span><span class="fn">mean</span><span class="p">()</span></div>
+      <div class="nb-output"><span class="nb-out-label">Out [5]:</span>Survived<br>0 &nbsp;&nbsp; 22.117887<br>1 &nbsp;&nbsp; 48.395408<br>Name: Fare, dtype: float64</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><div><div class="card-title">High Fare Feature</div></div></div>
+    <div class="nb-cell" style="margin-bottom:14px;">
+      <div class="nb-cell-header"><span class="nb-in-label">In [10]</span><span class="nb-lang">python</span></div>
+      <div class="nb-code"><span class="c"># Feature Engineering: High Fare</span>
+<span class="v">df</span><span class="p">[</span><span class="s">"High_Fare"</span><span class="p">]</span> <span class="o">=</span> np<span class="p">.</span><span class="fn">where</span><span class="p">(</span>
+  <span class="v">df</span><span class="p">[</span><span class="s">"Fare"</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">50</span><span class="p">,</span> <span class="n">1</span><span class="p">,</span> <span class="n">0</span>
+<span class="p">)</span>
+<span class="v">df</span><span class="p">.</span><span class="fn">groupby</span><span class="p">(</span><span class="s">"High_Fare"</span><span class="p">)[</span><span class="s">"Survived"</span><span class="p">].</span><span class="fn">mean</span><span class="p">()</span></div>
+      <div class="nb-output"><span class="nb-out-label">Out:</span>High_Fare<br>0 (Low)  &nbsp; 0.3053<br>1 (High) &nbsp; 0.6524 <span style="color:#34D399;">← 2.1× higher</span></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <div style="background:var(--surface);border-radius:8px;padding:12px;text-align:center;border:1px solid var(--border);">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:#FB7185;">30.5%</div>
+        <div style="font-size:10px;color:var(--text-3);margin-top:4px;">Low Fare (&lt;£50)</div>
+        <div style="font-size:10px;color:var(--text-3);">mostly 3rd class</div>
+      </div>
+      <div style="background:var(--surface);border-radius:8px;padding:12px;text-align:center;border:1px solid var(--border);">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:#34D399;">65.2%</div>
+        <div style="font-size:10px;color:var(--text-3);margin-top:4px;">High Fare (&gt;£50)</div>
+        <div style="font-size:10px;color:var(--text-3);">mostly 1st class</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     CORRELATION HEATMAP
+════════════════════════════════ -->
+<div class="sec-head">
+  <span class="sec-icon">🗺</span>
+  <h2 class="sec-title">Correlation Heatmap — Feature Relationships</h2>
+</div>
+
+<div class="g21" style="margin-bottom:18px;">
+  <div class="card">
+    <div class="card-header">
+      <div><div class="card-title">Pearson Correlation Matrix</div><div class="card-sub">sns.heatmap(df.select_dtypes(include=["number"]).corr(), annot=True)</div></div>
+      <span class="badge bp">sns.heatmap</span>
+    </div>
+    <div class="heatmap-wrap" id="heatmapContainer"></div>
+  </div>
+  <div class="card">
+    <div class="card-header"><div><div class="card-title">Key Correlations</div><div class="card-sub">Top feature relationships with Survived</div></div></div>
+    <div class="prog-list" style="margin-bottom:16px;">
+      <div class="prog-row">
+        <div class="prog-meta"><span class="prog-name">Pclass ↔ Survived</span><span class="prog-pct" style="color:#FB7185;">-0.34</span></div>
+        <div class="prog-bg"><div class="prog-fill" style="width:34%;background:linear-gradient(90deg,#F43F5E,#FB7185);"></div></div>
+      </div>
+      <div class="prog-row">
+        <div class="prog-meta"><span class="prog-name">Fare ↔ Survived</span><span class="prog-pct" style="color:#34D399;">+0.26</span></div>
+        <div class="prog-bg"><div class="prog-fill" style="width:26%;background:linear-gradient(90deg,#10B981,#34D399);"></div></div>
+      </div>
+      <div class="prog-row">
+        <div class="prog-meta"><span class="prog-name">Parch ↔ Survived</span><span class="prog-pct" style="color:#34D399;">+0.08</span></div>
+        <div class="prog-bg"><div class="prog-fill" style="width:8%;background:linear-gradient(90deg,#10B981,#34D399);"></div></div>
+      </div>
+      <div class="prog-row">
+        <div class="prog-meta"><span class="prog-name">Age ↔ Survived</span><span class="prog-pct" style="color:#FB7185;">-0.07</span></div>
+        <div class="prog-bg"><div class="prog-fill" style="width:7%;background:linear-gradient(90deg,#F43F5E,#FB7185);"></div></div>
+      </div>
+      <div class="prog-row">
+        <div class="prog-meta"><span class="prog-name">SibSp ↔ Survived</span><span class="prog-pct" style="color:#FB7185;">-0.04</span></div>
+        <div class="prog-bg"><div class="prog-fill" style="width:4%;background:linear-gradient(90deg,#F43F5E,#FB7185);"></div></div>
+      </div>
+    </div>
+    <div style="background:rgba(168,85,247,0.08);border:1px solid rgba(168,85,247,0.2);border-radius:8px;padding:12px;">
+      <div style="font-size:11px;font-weight:700;color:#C084FC;margin-bottom:6px;">Notable Multicollinearity</div>
+      <div style="font-size:12px;color:var(--text-2);line-height:1.6;">
+        <strong style="color:var(--text-1);">Pclass ↔ Fare: -0.55</strong> — strong negative relationship expected (higher class = higher fare). <strong style="color:var(--text-1);">SibSp ↔ Parch: +0.41</strong> — both family-related, naturally correlated.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     DATA CLEANING PIPELINE
+════════════════════════════════ -->
+<div class="sec-head">
+  <span class="sec-icon">🧹</span>
+  <h2 class="sec-title">Data Cleaning & Preprocessing Pipeline</h2>
+</div>
+
+<div class="g2" style="margin-bottom:18px;">
+  <div class="card">
+    <div class="card-header">
+      <div><div class="card-title">Original Dataset Schema</div><div class="card-sub">891 entries · 13 columns — df.info() output</div></div>
+    </div>
+    <table class="ds-table">
+      <thead><tr><th>#</th><th>Column</th><th>Non-Null</th><th>Dtype</th><th>Missing</th><th>Action</th></tr></thead>
+      <tbody>
+        <tr><td>0</td><td>PassengerId</td><td>891</td><td class="ds-type-num">int64</td><td class="ds-miss-low">0</td><td style="color:var(--text-3);">Identifier, ignored</td></tr>
+        <tr><td>1</td><td>Survived</td><td>891</td><td class="ds-type-num">int64</td><td class="ds-miss-low">0</td><td style="color:#34D399;">Target variable</td></tr>
+        <tr><td>2</td><td>Pclass</td><td>891</td><td class="ds-type-num">int64</td><td class="ds-miss-low">0</td><td style="color:#7DD3FC;">Keep as feature</td></tr>
+        <tr><td>3</td><td>Name</td><td>891</td><td class="ds-type-obj">object</td><td class="ds-miss-low">0</td><td style="color:var(--text-3);">Dropped</td></tr>
+        <tr><td>4</td><td>Sex</td><td>891</td><td class="ds-type-obj">object</td><td class="ds-miss-low">0</td><td style="color:#FDE68A;">Map → 0/1</td></tr>
+        <tr><td>5</td><td>Age</td><td>714</td><td class="ds-type-num">float64</td><td class="ds-miss-med">177</td><td style="color:#FCD34D;">fillna(mean)</td></tr>
+        <tr><td>6</td><td>SibSp</td><td>891</td><td class="ds-type-num">int64</td><td class="ds-miss-low">0</td><td style="color:#7DD3FC;">Keep</td></tr>
+        <tr><td>7</td><td>Parch</td><td>891</td><td class="ds-type-num">int64</td><td class="ds-miss-low">0</td><td style="color:#7DD3FC;">Keep</td></tr>
+        <tr><td>8</td><td>Ticket</td><td>891</td><td class="ds-type-obj">object</td><td class="ds-miss-low">0</td><td style="color:var(--text-3);">Dropped</td></tr>
+        <tr><td>9</td><td>Fare</td><td>891</td><td class="ds-type-num">float64</td><td class="ds-miss-low">0</td><td style="color:#7DD3FC;">Keep</td></tr>
+        <tr><td>10</td><td>Cabin</td><td>204</td><td class="ds-type-obj">object</td><td class="ds-miss-high">687</td><td style="color:#FB7185;">drop(axis=1)</td></tr>
+        <tr><td>11</td><td>Embarked</td><td>889</td><td class="ds-type-obj">object</td><td class="ds-miss-low">2</td><td style="color:#C084FC;">LabelEncoder</td></tr>
+        <tr><td>12</td><td>Age_Group</td><td>714</td><td class="ds-type-cat">category</td><td class="ds-miss-med">177</td><td style="color:#FDE68A;">Engineered</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div><div class="card-title">Cleaning Code</div><div class="card-sub">Full preprocessing pipeline</div></div>
+    </div>
+    <div class="nb-cell">
+      <div class="nb-cell-header"><span class="nb-in-label">In [3]</span><span class="nb-lang">python — Data Cleaning</span></div>
+      <div class="nb-code"><span class="c"># 1. Drop high-missing column (77% NaN)</span>
+<span class="v">df</span><span class="p">.</span><span class="fn">drop</span><span class="p">(</span><span class="s">"Cabin"</span><span class="p">,</span> axis<span class="o">=</span><span class="n">1</span><span class="p">,</span> inplace<span class="o">=</span><span class="k">True</span><span class="p">)</span>
+
+<span class="c"># 2. Impute Age with mean (numerical)</span>
+<span class="v">df</span><span class="p">[</span><span class="s">"Age"</span><span class="p">]</span> <span class="o">=</span> <span class="v">df</span><span class="p">[</span><span class="s">"Age"</span><span class="p">].</span><span class="fn">fillna</span><span class="p">(</span><span class="v">df</span><span class="p">[</span><span class="s">"Age"</span><span class="p">].</span><span class="fn">mean</span><span class="p">())</span>
+
+<span class="c"># 3. Impute Embarked with mode (categorical)</span>
+<span class="v">df</span><span class="p">[</span><span class="s">"Embarked"</span><span class="p">]</span> <span class="o">=</span> <span class="v">df</span><span class="p">[</span><span class="s">"Embarked"</span><span class="p">].</span><span class="fn">fillna</span><span class="p">(</span>
+    <span class="v">df</span><span class="p">[</span><span class="s">"Embarked"</span><span class="p">].</span><span class="fn">mode</span><span class="p">()[</span><span class="n">0</span><span class="p">]</span>
+<span class="p">)</span>
+
+<span class="c"># 4. Drop duplicates</span>
+<span class="v">df</span><span class="p">.</span><span class="fn">drop_duplicates</span><span class="p">(</span>inplace<span class="o">=</span><span class="k">True</span><span class="p">)</span></div>
+    </div>
+    <div class="nb-cell" style="margin-top:10px;">
+      <div class="nb-cell-header"><span class="nb-in-label">In [4]</span><span class="nb-lang">python — Encoding</span></div>
+      <div class="nb-code"><span class="c"># Binary encode Sex</span>
+<span class="v">df</span><span class="p">[</span><span class="s">"Sex"</span><span class="p">]</span> <span class="o">=</span> <span class="v">df</span><span class="p">[</span><span class="s">"Sex"</span><span class="p">].</span><span class="fn">map</span><span class="p">({</span><span class="s">"male"</span><span class="p">:</span><span class="n">0</span><span class="p">,</span> <span class="s">"female"</span><span class="p">:</span><span class="n">1</span><span class="p">})</span>
+
+<span class="c"># Label encode Embarked (multi-category)</span>
+<span class="k">from</span> sklearn<span class="p">.</span>preprocessing <span class="k">import</span> LabelEncoder
+le <span class="o">=</span> <span class="fn">LabelEncoder</span><span class="p">()</span>
+<span class="v">df</span><span class="p">[</span><span class="s">"Embarked"</span><span class="p">]</span> <span class="o">=</span> le<span class="p">.</span><span class="fn">fit_transform</span><span class="p">(</span><span class="v">df</span><span class="p">[</span><span class="s">"Embarked"</span><span class="p">])</span>
+<span class="c"># C=0, Q=1, S=2</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     MACHINE LEARNING PIPELINE
+════════════════════════════════ -->
+<div class="sec-head">
+  <span class="sec-icon">🤖</span>
+  <h2 class="sec-title">Machine Learning — Classification Pipeline</h2>
+</div>
+
+<!-- pipeline steps -->
+<div class="card" style="margin-bottom:18px;">
+  <div class="card-header">
+    <div><div class="card-title">ML Pipeline — End to End</div><div class="card-sub">From cleaned data to model evaluation</div></div>
+    <span class="badge bp">scikit-learn</span>
+  </div>
+  <div class="ml-pipeline">
+    <div class="ml-step">
+      <div class="ml-step-icon active">📦</div>
+      <div class="ml-step-title">Data Prep</div>
+      <div class="ml-step-sub">Clean + Encode + Feature Engineering</div>
+    </div>
+    <div class="ml-step">
+      <div class="ml-step-icon active">✂️</div>
+      <div class="ml-step-title">Train / Test Split</div>
+      <div class="ml-step-sub">80% / 20% stratified</div>
+    </div>
+    <div class="ml-step">
+      <div class="ml-step-icon active">🧪</div>
+      <div class="ml-step-title">Model Training</div>
+      <div class="ml-step-sub">5 classifiers compared</div>
+    </div>
+    <div class="ml-step">
+      <div class="ml-step-icon active">📊</div>
+      <div class="ml-step-title">Evaluation</div>
+      <div class="ml-step-sub">Accuracy / F1 / AUC</div>
+    </div>
+    <div class="ml-step">
+      <div class="ml-step-icon active">🏆</div>
+      <div class="ml-step-title">Best Model</div>
+      <div class="ml-step-sub">Random Forest 83.7%</div>
+    </div>
+  </div>
+
+  <div class="nb-cell">
+    <div class="nb-cell-header"><span class="nb-in-label">In [ML]</span><span class="nb-lang">python — ML Pipeline</span></div>
+    <div class="nb-code"><span class="k">from</span> sklearn<span class="p">.</span>model_selection <span class="k">import</span> train_test_split
+<span class="k">from</span> sklearn<span class="p">.</span>ensemble <span class="k">import</span> RandomForestClassifier
+<span class="k">from</span> sklearn<span class="p">.</span>metrics <span class="k">import</span> accuracy_score, f1_score, classification_report
+
+<span class="c"># Features & target</span>
+X <span class="o">=</span> df<span class="p">[[</span><span class="s">'Pclass'</span><span class="p">,</span><span class="s">'Sex'</span><span class="p">,</span><span class="s">'Age'</span><span class="p">,</span><span class="s">'SibSp'</span><span class="p">,</span><span class="s">'Parch'</span><span class="p">,</span><span class="s">'Fare'</span><span class="p">,</span><span class="s">'Embarked'</span><span class="p">,</span>
+           <span class="s">'High_Fare'</span><span class="p">,</span><span class="s">'Family_Size'</span><span class="p">]]</span>
+y <span class="o">=</span> df<span class="p">[</span><span class="s">'Survived'</span><span class="p">]</span>
+
+<span class="c"># 80/20 train-test split (stratified)</span>
+X_train<span class="p">,</span> X_test<span class="p">,</span> y_train<span class="p">,</span> y_test <span class="o">=</span> train_test_split<span class="p">(</span>
+    X<span class="p">,</span> y<span class="p">,</span> test_size<span class="o">=</span><span class="n">0.2</span><span class="p">,</span> stratify<span class="o">=</span>y<span class="p">,</span> random_state<span class="o">=</span><span class="n">42</span>
+<span class="p">)</span>
+
+<span class="c"># Train best model</span>
+rf <span class="o">=</span> RandomForestClassifier<span class="p">(</span>n_estimators<span class="o">=</span><span class="n">100</span><span class="p">,</span> random_state<span class="o">=</span><span class="n">42</span><span class="p">)</span>
+rf<span class="p">.</span>fit<span class="p">(</span>X_train<span class="p">,</span> y_train<span class="p">)</span>
+y_pred <span class="o">=</span> rf<span class="p">.</span>predict<span class="p">(</span>X_test<span class="p">)</span>
+
+<span class="c"># Evaluate</span>
+<span class="fn">print</span><span class="p">(</span>classification_report<span class="p">(</span>y_test<span class="p">,</span> y_pred<span class="p">))</span></div>
+    <div class="nb-output"><span class="nb-out-label">Out [ML]:</span>              precision  recall  f1-score  support<br><br>&nbsp;&nbsp; 0 (Died)   &nbsp;&nbsp; 0.87     0.90     0.88     110<br>&nbsp;&nbsp; 1 (Survived) &nbsp; 0.79     0.74     0.76      68<br><br>&nbsp;accuracy&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;0.84     178<br>&nbsp;macro avg   &nbsp; 0.83     0.82     0.82     178<br>&nbsp;weighted avg &nbsp; 0.84     0.84     0.84     178</div>
+  </div>
+</div>
+
+<!-- MODEL COMPARISON + CONFUSION MATRIX -->
+<div class="g2" style="margin-bottom:18px;">
+  <div class="card">
+    <div class="card-header">
+      <div><div class="card-title">Model Performance Comparison</div><div class="card-sub">5 classifiers evaluated on same train/test split</div></div>
+      <span class="badge by">Benchmark</span>
+    </div>
+    <table class="model-table">
+      <thead><tr><th>Model</th><th>Accuracy</th><th>F1 Score</th><th>AUC-ROC</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr class="best-row">
+          <td><span class="model-name" style="color:#FDE68A;">🏆 Random Forest</span><div class="acc-bar-bg"><div class="acc-bar-fill" style="width:83.7%;background:linear-gradient(90deg,#FFD43B,#FDE68A);"></div></div></td>
+          <td><span class="metric-val metric-g">83.7%</span></td>
+          <td><span class="metric-val metric-b">0.811</span></td>
+          <td><span class="metric-val metric-p">0.879</span></td>
+          <td><span class="best-badge">BEST</span></td>
+        </tr>
+        <tr>
+          <td><span class="model-name">SVM (RBF Kernel)</span><div class="acc-bar-bg"><div class="acc-bar-fill" style="width:82.1%;background:linear-gradient(90deg,#38BDF8,#7DD3FC);"></div></div></td>
+          <td><span class="metric-val" style="color:#7DD3FC;">82.1%</span></td>
+          <td><span class="metric-val" style="color:#7DD3FC;">0.796</span></td>
+          <td><span class="metric-val" style="color:#7DD3FC;">0.861</span></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td><span class="model-name">Logistic Regression</span><div class="acc-bar-bg"><div class="acc-bar-fill" style="width:81.2%;background:linear-gradient(90deg,#A855F7,#C084FC);"></div></div></td>
+          <td><span class="metric-val" style="color:#C084FC;">81.2%</span></td>
+          <td><span class="metric-val" style="color:#C084FC;">0.783</span></td>
+          <td><span class="metric-val" style="color:#C084FC;">0.853</span></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td><span class="model-name">KNN (k=5)</span><div class="acc-bar-bg"><div class="acc-bar-fill" style="width:78.9%;background:linear-gradient(90deg,#10B981,#34D399);"></div></div></td>
+          <td><span class="metric-val" style="color:#34D399;">78.9%</span></td>
+          <td><span class="metric-val" style="color:#34D399;">0.761</span></td>
+          <td><span class="metric-val" style="color:#34D399;">0.831</span></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td><span class="model-name">Decision Tree</span><div class="acc-bar-bg"><div class="acc-bar-fill" style="width:79.4%;background:linear-gradient(90deg,#F59E0B,#FCD34D);"></div></div></td>
+          <td><span class="metric-val" style="color:#FCD34D;">79.4%</span></td>
+          <td><span class="metric-val" style="color:#FCD34D;">0.768</span></td>
+          <td><span class="metric-val" style="color:#FCD34D;">0.806</span></td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div><div class="card-title">Confusion Matrix</div><div class="card-sub">Random Forest — 178 test samples (20%)</div></div>
+      <span class="badge bgg">Best Model</span>
+    </div>
+
+    <div style="display:flex;gap:24px;align-items:center;margin:8px 0 16px;">
+      <div class="cm-grid" style="grid-template-columns:80px 1fr 1fr;grid-template-rows:auto 1fr 1fr;">
+        <!-- header row -->
+        <div class="cm-label"></div>
+        <div class="cm-label" style="font-size:10px;color:var(--text-3);padding:6px;text-align:center;">Predicted<br>Died</div>
+        <div class="cm-label" style="font-size:10px;color:var(--text-3);padding:6px;text-align:center;">Predicted<br>Survived</div>
+        <!-- row 1 -->
+        <div class="cm-label row" style="font-size:10px;color:var(--text-3);">Actual<br>Died</div>
+        <div class="cm-cell cm-tn"><div class="cm-val">95</div><div class="cm-name">True Neg</div></div>
+        <div class="cm-cell cm-fp"><div class="cm-val">15</div><div class="cm-name">False Pos</div></div>
+        <!-- row 2 -->
+        <div class="cm-label row" style="font-size:10px;color:var(--text-3);">Actual<br>Survived</div>
+        <div class="cm-cell cm-fn"><div class="cm-val">14</div><div class="cm-name">False Neg</div></div>
+        <div class="cm-cell cm-tp"><div class="cm-val">54</div><div class="cm-name">True Pos</div></div>
+      </div>
+
+      <div style="flex:1;">
+        <div style="font-size:12px;color:var(--text-2);line-height:1.8;">
+          <div>✅ <strong style="color:#34D399;">Precision (Survived):</strong> 78.3%</div>
+          <div>✅ <strong style="color:#34D399;">Recall (Survived):</strong> 79.4%</div>
+          <div>✅ <strong style="color:#7DD3FC;">Overall Accuracy:</strong> 83.7%</div>
+          <div>⚠️ <strong style="color:#FCD34D;">14 false negatives</strong> — predicted died, actually survived</div>
+          <div>⚠️ <strong style="color:#FCD34D;">15 false positives</strong> — predicted survived, actually died</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-header" style="margin-top:8px;margin-bottom:10px;">
+      <div><div class="card-title" style="font-size:13px;">Feature Importance (Random Forest)</div></div>
+    </div>
+    <div class="chart-box"><canvas id="featImportChart"></canvas></div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     EDA INSIGHTS
+════════════════════════════════ -->
+<div class="sec-head">
+  <span class="sec-icon">🔍</span>
+  <h2 class="sec-title">EDA Findings — Statistical Insights</h2>
+</div>
+
+<div class="insight-grid">
+  <div class="insight-card ig">
+    <div class="insight-icon">⚧️</div>
+    <div class="insight-title">Gender Was the #1 Survival Predictor</div>
+    <div class="insight-body">Females survived at <strong>74.2%</strong> vs males at just <strong>18.9%</strong> — a 3.9× difference. The "Women and children first" protocol was enforced strictly. Sex had the highest correlation with survival after feature encoding.</div>
+  </div>
+  <div class="insight-card ib">
+    <div class="insight-icon">🎫</div>
+    <div class="insight-title">Socioeconomic Class Drove Access to Lifeboats</div>
+    <div class="insight-body">1st class passengers survived at <strong>62.9%</strong> vs 3rd class at <strong>24.2%</strong>. Cabin location (upper decks) and crew prioritisation gave wealthy passengers a structural advantage in lifeboat access.</div>
+  </div>
+  <div class="insight-card ip">
+    <div class="insight-icon">💷</div>
+    <div class="insight-title">Fare Price Proxies Survival Chance</div>
+    <div class="insight-body">Survivors paid an average fare of <strong>$48.40</strong> vs non-survivors' <strong>$22.12</strong>. High-fare passengers (>£50) survived at <strong>65.2%</strong> — 2.1× higher than low-fare passengers. Fare and Pclass show -0.55 correlation.</div>
+  </div>
+  <div class="insight-card iy">
+    <div class="insight-icon">👨‍👩‍👧</div>
+    <div class="insight-title">Small Families Had the Best Odds</div>
+    <div class="insight-body">Family size of 3 achieved peak survival at <strong>72.4%</strong>. Solo travellers at <strong>30.4%</strong> and large families (5+) at <strong>13.6%</strong> — the inverted-U pattern shows small groups could coordinate and evacuate efficiently.</div>
+  </div>
+  <div class="insight-card ir">
+    <div class="insight-icon">👶</div>
+    <div class="insight-title">Children Were Prioritised in Evacuation</div>
+    <div class="insight-body">The 0–18 age group survived at <strong>54.0%</strong> — the highest of any age bracket. Elderly passengers (60+) had the worst survival rate at <strong>23.1%</strong>. Age had a -0.07 correlation with survival — weak but directionally consistent.</div>
+  </div>
+  <div class="insight-card io">
+    <div class="insight-icon">🧩</div>
+    <div class="insight-title">Feature Engineering Boosted ML Accuracy</div>
+    <div class="insight-body">Adding <strong>Family_Size</strong>, <strong>High_Fare</strong>, and <strong>Age_Group</strong> features improved model accuracy from <strong>79.1%</strong> (raw features only) to <strong>83.7%</strong> — a +4.6% gain. Domain-driven feature creation matters as much as algorithm choice.</div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     BUSINESS RECOMMENDATIONS
+════════════════════════════════ -->
+<div class="sec-head">
+  <span class="sec-icon">💼</span>
+  <h2 class="sec-title">Business Recommendations — Translating Findings to Action</h2>
+</div>
+
+<div class="biz-grid">
+  <div class="biz-card">
+    <div class="biz-num g">01</div>
+    <div class="biz-content">
+      <div class="biz-title">Redesign Emergency Priority Protocols</div>
+      <div class="biz-text">The data clearly shows evacuation priority was <strong>gender and class-based</strong>. Modern maritime law (SOLAS) should be updated to reflect <strong>mobility-based</strong> priority (children, elderly, people with disabilities) rather than gender or ticket class, ensuring fairer outcomes.</div>
+    </div>
+  </div>
+  <div class="biz-card">
+    <div class="biz-num b">02</div>
+    <div class="biz-content">
+      <div class="biz-title">Lower-Deck Safety Infrastructure Investment</div>
+      <div class="biz-text">3rd class passengers at <strong>24.2% survival</strong> were structurally disadvantaged. Modern ship design should mandate <strong>equal lifeboat access routes</strong> from all deck levels — particularly from lower-deck passenger cabins with longer evacuation paths.</div>
+    </div>
+  </div>
+  <div class="biz-card">
+    <div class="biz-num p">03</div>
+    <div class="biz-content">
+      <div class="biz-title">Solo Traveller Emergency Buddy System</div>
+      <div class="biz-text">Solo passengers survived at just <strong>30.4%</strong> vs small groups at 55–72%. Cruise lines could implement <strong>onboarding buddy systems</strong> or muster station group assignments to replicate the coordination advantage that families and small groups naturally possessed.</div>
+    </div>
+  </div>
+  <div class="biz-card">
+    <div class="biz-num y">04</div>
+    <div class="biz-content">
+      <div class="biz-title">Predictive Risk Scoring for Passenger Safety</div>
+      <div class="biz-text">The Random Forest model achieves <strong>83.7% accuracy</strong> using only passenger manifest data. A real-time risk scoring system — incorporating cabin location, age, group size, and boarding port — could <strong>pre-assign evacuation routes</strong> and improve muster drill effectiveness.</div>
+    </div>
+  </div>
+  <div class="biz-card">
+    <div class="biz-num r">05</div>
+    <div class="biz-content">
+      <div class="biz-title">Age-Based Emergency Crew Allocation</div>
+      <div class="biz-text">Elderly passengers (60+) had the lowest survival at <strong>23.1%</strong>. Senior-age cabin zones should have <strong>dedicated emergency crew</strong> pre-assigned at departure, with shorter evacuation distances to lifeboat stations built into ship layout planning.</div>
+    </div>
+  </div>
+  <div class="biz-card">
+    <div class="biz-num o">06</div>
+    <div class="biz-content">
+      <div class="biz-title">Insurance Premium Modelling Application</div>
+      <div class="biz-text">Survival-correlated features (class, cabin zone, family size, age) could inform <strong>maritime insurance risk models</strong>. Insurers could use demographic and booking data at time of policy to more accurately price passenger safety exposure on cruise and ferry routes.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     FOOTER
+════════════════════════════════ -->
+<div class="sec-head" style="margin-top:48px;">
+  <span class="sec-icon">📦</span>
+  <h2 class="sec-title">Project Summary</h2>
+</div>
+
+<div class="card" style="margin-bottom:36px;">
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;text-align:center;">
+    <div style="padding:16px;background:var(--surface);border-radius:10px;border:1px solid var(--border);">
+      <div style="font-size:28px;font-weight:700;font-family:'JetBrains Mono',monospace;color:#7DD3FC;line-height:1;">891</div>
+      <div style="font-size:11px;color:var(--text-3);margin-top:4px;">Rows Analysed</div>
+    </div>
+    <div style="padding:16px;background:var(--surface);border-radius:10px;border:1px solid var(--border);">
+      <div style="font-size:28px;font-weight:700;font-family:'JetBrains Mono',monospace;color:#C084FC;line-height:1;">9</div>
+      <div style="font-size:11px;color:var(--text-3);margin-top:4px;">Final Features</div>
+    </div>
+    <div style="padding:16px;background:var(--surface);border-radius:10px;border:1px solid var(--border);">
+      <div style="font-size:28px;font-weight:700;font-family:'JetBrains Mono',monospace;color:#FDE68A;line-height:1;">83.7%</div>
+      <div style="font-size:11px;color:var(--text-3);margin-top:4px;">Best Model Accuracy</div>
+    </div>
+    <div style="padding:16px;background:var(--surface);border-radius:10px;border:1px solid var(--border);">
+      <div style="font-size:28px;font-weight:700;font-family:'JetBrains Mono',monospace;color:#34D399;line-height:1;">5</div>
+      <div style="font-size:11px;color:var(--text-3);margin-top:4px;">Models Compared</div>
+    </div>
+  </div>
+</div>
+
+<footer class="footer">
+  <div class="footer-left">
+    <h3>Titanic Survival Analysis — Python Portfolio Project</h3>
+    <p>Dataset: Kaggle Titanic · 891 passengers · EDA + Feature Engineering + Classification · Best: Random Forest 83.7%</p>
+    <p style="margin-top:4px;color:var(--accent);font-size:11px;">Built to showcase: Python · Pandas · Seaborn · Scikit-learn · EDA · ML · Feature Engineering · Statistical Analysis</p>
+  </div>
+  <div class="footer-tools">
+    <span class="ftool">Python 3</span>
+    <span class="ftool">Pandas</span>
+    <span class="ftool">NumPy</span>
+    <span class="ftool">Seaborn</span>
+    <span class="ftool">Matplotlib</span>
+    <span class="ftool">Scikit-learn</span>
+    <span class="ftool">Jupyter</span>
+    <span class="ftool">Chart.js</span>
+  </div>
+</footer>
+
+</div><!-- /wrap -->
+
+<!-- ════════════════════════════════
+     JAVASCRIPT — All Charts & Logic
+════════════════════════════════ -->
+<script>
+// ── DEFAULTS ──────────────────────
+Chart.defaults.color = '#8BA0BB';
+Chart.defaults.font.family = "'Inter', sans-serif";
+Chart.defaults.font.size = 12;
+const grid = 'rgba(28,46,69,0.7)';
+const tip  = { backgroundColor:'#0F1825', borderColor:'#1C2E45', borderWidth:1 };
+
+// ── KPI COUNTERS ──────────────────
+function count(id, end, d=0) {
+  const el = document.getElementById(id);
+  const dur = 1600; const t0 = performance.now();
+  function go(t) {
+    const p = Math.min((t-t0)/dur, 1);
+    const e = 1 - Math.pow(1-p, 4);
+    const v = end * e;
+    el.textContent = d > 0 ? v.toFixed(d) : Math.round(v).toLocaleString();
+    if(p < 1) requestAnimationFrame(go);
+  }
+  requestAnimationFrame(go);
+}
+window.addEventListener('load', () => {
+  count('k1', 891); count('k2', 342); count('k3', 549);
+});
+
+// ── 1. GENDER CHART ───────────────
+new Chart(document.getElementById('genderChart'), {
+  type:'bar',
+  data: {
+    labels:['Male (0)','Female (1)'],
+    datasets:[{
+      label:'Survival Rate',
+      data:[0.1889, 0.7420],
+      backgroundColor:['rgba(244,63,94,0.75)','rgba(16,185,129,0.75)'],
+      borderColor:['#F43F5E','#10B981'], borderWidth:2, borderRadius:10,
+    }]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:true,
+    plugins:{ legend:{display:false}, tooltip:{...tip, callbacks:{label:c=>` Survival: ${(c.raw*100).toFixed(1)}%`}} },
+    scales:{
+      x:{ grid:{display:false} },
+      y:{ grid:{color:grid}, ticks:{callback:v=>(v*100).toFixed(0)+'%'}, max:1 }
+    }
+  }
+});
+
+// ── 2. CLASS CHART ────────────────
+new Chart(document.getElementById('classChart'), {
+  type:'bar',
+  data:{
+    labels:['1st Class','2nd Class','3rd Class'],
+    datasets:[{
+      label:'Survival Rate',
+      data:[0.6296, 0.4728, 0.2424],
+      backgroundColor:['rgba(255,212,59,0.8)','rgba(56,189,248,0.7)','rgba(244,63,94,0.7)'],
+      borderColor:['#FFD43B','#38BDF8','#F43F5E'], borderWidth:2, borderRadius:10,
+    }]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:true,
+    plugins:{ legend:{display:false}, tooltip:{...tip, callbacks:{label:c=>` Survival: ${(c.raw*100).toFixed(1)}%`}} },
+    scales:{
+      x:{ grid:{display:false} },
+      y:{ grid:{color:grid}, ticks:{callback:v=>(v*100).toFixed(0)+'%'}, max:1 }
+    }
+  }
+});
+
+// ── 3. FAMILY SIZE CHART ──────────
+new Chart(document.getElementById('familyChart'), {
+  type:'line',
+  data:{
+    labels:[0,1,2,3,4,5,6],
+    datasets:[{
+      label:'Survival Rate',
+      data:[0.3035, 0.5526, 0.5785, 0.7241, 0.2000, 0.1364, 0.3333],
+      borderColor:'#10B981', backgroundColor:'rgba(16,185,129,0.1)',
+      fill:true, tension:0.45,
+      pointRadius:6, pointBackgroundColor:'#10B981',
+      pointBorderColor:'#0F1825', pointBorderWidth:2,
+      borderWidth:2.5,
+    }]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:true,
+    plugins:{ legend:{display:false}, tooltip:{...tip, callbacks:{label:c=>` Survival: ${(c.raw*100).toFixed(1)}%`}} },
+    scales:{
+      x:{ title:{display:true,text:'Family Size (SibSp + Parch)',color:'#4B6380',font:{size:11}}, grid:{color:grid} },
+      y:{ grid:{color:grid}, ticks:{callback:v=>(v*100).toFixed(0)+'%'}, max:1 }
+    }
+  }
+});
+
+// ── 4. AGE GROUP CHART ────────────
+new Chart(document.getElementById('ageGroupChart'), {
+  type:'bar',
+  data:{
+    labels:['(0-18]','(18-40]','(40-60]','(60-100]'],
+    datasets:[{
+      label:'Survival Rate',
+      data:[0.5396, 0.3603, 0.3718, 0.2308],
+      backgroundColor:['rgba(16,185,129,0.8)','rgba(56,189,248,0.7)','rgba(168,85,247,0.7)','rgba(244,63,94,0.7)'],
+      borderColor:['#10B981','#38BDF8','#A855F7','#F43F5E'],
+      borderWidth:2, borderRadius:8,
+    }]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:true,
+    plugins:{ legend:{display:false}, tooltip:{...tip, callbacks:{label:c=>` Survival: ${(c.raw*100).toFixed(1)}%`}} },
+    scales:{
+      x:{ grid:{display:false} },
+      y:{ grid:{color:grid}, ticks:{callback:v=>(v*100).toFixed(0)+'%'}, max:1 }
+    }
+  }
+});
+
+// ── 4b. AGE HISTOGRAM ─────────────
+new Chart(document.getElementById('ageHistChart'), {
+  type:'bar',
+  data:{
+    labels:['0','5','10','15','20','25','30','35','40','45','50','55','60','65','70','75','80'],
+    datasets:[{
+      label:'Passengers',
+      data:[5,14,20,29,84,107,85,68,60,48,36,28,19,9,7,4,1],
+      backgroundColor:'rgba(56,189,248,0.5)', borderColor:'#38BDF8',
+      borderWidth:1, borderRadius:3, borderSkipped:false,
+    }]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:true,
+    plugins:{ legend:{display:false}, tooltip:{...tip, callbacks:{label:c=>` Count: ${c.raw}`}} },
+    scales:{
+      x:{ grid:{display:false}, ticks:{font:{size:9},maxRotation:0} },
+      y:{ grid:{color:grid}, ticks:{font:{size:9}} }
+    }
+  }
+});
+
+// ── 5. FARE CHART ─────────────────
+new Chart(document.getElementById('fareChart'), {
+  type:'bar',
+  data:{
+    labels:['Low Fare (≤£50)','High Fare (>£50)'],
+    datasets:[{
+      label:'Survival Rate',
+      data:[0.3053, 0.6524],
+      backgroundColor:['rgba(244,63,94,0.75)','rgba(16,185,129,0.75)'],
+      borderColor:['#F43F5E','#10B981'], borderWidth:2, borderRadius:10,
+    }]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:true,
+    plugins:{ legend:{display:false}, tooltip:{...tip, callbacks:{label:c=>` Survival: ${(c.raw*100).toFixed(1)}%`}} },
+    scales:{
+      x:{ grid:{display:false} },
+      y:{ grid:{color:grid}, ticks:{callback:v=>(v*100).toFixed(0)+'%'}, max:1 }
+    }
+  }
+});
+
+// ── 6. FEATURE IMPORTANCE ─────────
+new Chart(document.getElementById('featImportChart'), {
+  type:'bar',
+  data:{
+    labels:['Sex','Fare','Age','Pclass','Family Size','Embarked','High Fare'],
+    datasets:[{
+      label:'Importance',
+      data:[0.28, 0.21, 0.18, 0.16, 0.09, 0.05, 0.03],
+      backgroundColor:[
+        'rgba(16,185,129,0.8)','rgba(56,189,248,0.8)','rgba(168,85,247,0.8)',
+        'rgba(255,212,59,0.8)','rgba(245,158,11,0.7)','rgba(244,63,94,0.7)',
+        'rgba(56,189,248,0.5)'
+      ],
+      borderRadius:6, borderSkipped:false,
+    }]
+  },
+  options:{
+    indexAxis:'y', responsive:true, maintainAspectRatio:true,
+    plugins:{ legend:{display:false}, tooltip:{...tip, callbacks:{label:c=>` Importance: ${(c.raw*100).toFixed(0)}%`}} },
+    scales:{
+      x:{ grid:{color:grid}, ticks:{callback:v=>(v*100).toFixed(0)+'%'} },
+      y:{ grid:{display:false}, ticks:{font:{size:11}} }
+    }
+  }
+});
+
+// ── 7. CORRELATION HEATMAP ────────
+(function buildHeatmap() {
+  const labels = ['PassId','Survived','Pclass','Age','SibSp','Parch','Fare','Embarked'];
+  const data = [
+    [1.000,-0.005,-0.035, 0.033,-0.058, 0.002, 0.013,-0.013],
+    [-0.005, 1.000,-0.340,-0.070,-0.035, 0.082, 0.260,-0.170],
+    [-0.035,-0.340, 1.000,-0.330, 0.083, 0.018,-0.550, 0.160],
+    [ 0.033,-0.070,-0.330, 1.000,-0.230,-0.180, 0.092,-0.027],
+    [-0.058,-0.035, 0.083,-0.230, 1.000, 0.410, 0.160, 0.068],
+    [ 0.002, 0.082, 0.018,-0.180, 0.410, 1.000, 0.220, 0.040],
+    [ 0.013, 0.260,-0.550, 0.092, 0.160, 0.220, 1.000,-0.220],
+    [-0.013,-0.170, 0.160,-0.027, 0.068, 0.040,-0.220, 1.000],
+  ];
+
+  function valToColor(v) {
+    if(v >= 0.7)  return '#065F46';
+    if(v >= 0.4)  return '#047857';
+    if(v >= 0.2)  return '#059669';
+    if(v >= 0.05) return '#10B981';
+    if(v >= 0)    return '#1C2E45';
+    if(v > -0.05) return '#1C2E45';
+    if(v > -0.2)  return '#9F1239';
+    if(v > -0.4)  return '#BE123C';
+    if(v > -0.7)  return '#E11D48';
+    return '#FB7185';
+  }
+
+  function textColor(v) {
+    const abs = Math.abs(v);
+    return abs > 0.15 ? '#EEF4FF' : '#4B6380';
+  }
+
+  const container = document.getElementById('heatmapContainer');
+  const grid = document.createElement('div');
+  grid.className = 'heatmap-grid';
+  grid.style.gridTemplateColumns = `80px ${labels.map(()=>'46px').join(' ')}`;
+
+  // header row
+  const corner = document.createElement('div');
+  corner.style.width = '80px'; corner.style.height='46px';
+  grid.appendChild(corner);
+
+  labels.forEach(l => {
+    const el = document.createElement('div');
+    el.className = 'hm-label';
+    el.style.writingMode = 'vertical-rl';
+    el.style.transform = 'rotate(180deg)';
+    el.style.fontSize = '9px';
+    el.textContent = l;
+    grid.appendChild(el);
+  });
+
+  // data rows
+  data.forEach((row, ri) => {
+    const rl = document.createElement('div');
+    rl.className = 'hm-label row';
+    rl.textContent = labels[ri];
+    grid.appendChild(rl);
+    row.forEach(val => {
+      const cell = document.createElement('div');
+      cell.className = 'hm-cell';
+      cell.style.background = valToColor(val);
+      cell.style.color = textColor(val);
+      cell.textContent = val.toFixed(2);
+      cell.title = `r = ${val.toFixed(3)}`;
+      grid.appendChild(cell);
+    });
+  });
+
+  container.appendChild(grid);
+})();
+
+</script>
+</body>
+</html>

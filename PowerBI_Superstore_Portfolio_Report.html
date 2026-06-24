@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enterprise BI Analytics Framework - Superstore Sales Modeling</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --pbi-bg: #f3f2f1;
+            --pbi-banner: #111111;
+            --pbi-accent: #f2c811; /* Corporate Power BI Gold */
+            --card-bg: #ffffff;
+            --text-dark: #252423;
+            --text-muted: #605e5c;
+            --border: #edebe9;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+
+        body {
+            background-color: var(--pbi-bg);
+            color: var(--text-dark);
+        }
+
+        .top-navbar {
+            background-color: var(--pbi-banner);
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px solid var(--pbi-accent);
+        }
+
+        .nav-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-title span {
+            color: var(--pbi-accent);
+        }
+
+        .workspace-badge {
+            background: rgba(242, 200, 17, 0.2);
+            border: 1px solid var(--pbi-accent);
+            color: var(--pbi-accent);
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .dashboard-layout {
+            max-width: 1500px;
+            margin: 1.5rem auto;
+            display: grid;
+            grid-template-columns: 260px 1fr;
+            gap: 1.5rem;
+            padding: 0 1rem;
+        }
+
+        @media (max-width: 1024px) {
+            .dashboard-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .filter-panel {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+            height: fit-content;
+        }
+
+        .filter-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .filter-label {
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        .filter-select {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            background-color: #faf9f8;
+            color: var(--text-dark);
+            font-weight: 600;
+            outline: none;
+        }
+
+        .filter-select:focus {
+            border-color: #a19f9d;
+        }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .kpi-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .bi-kpi-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            padding: 1.25rem;
+            border-radius: 4px;
+            position: relative;
+        }
+
+        .bi-kpi-card::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 5px;
+            background-color: #0078d4;
+        }
+
+        .bi-kpi-title {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .bi-kpi-val {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-top: 0.25rem;
+        }
+
+        .main-visualization-matrix {
+            display: grid;
+            grid-template-columns: 3fr 2fr;
+            gap: 1.5rem;
+        }
+
+        @media (max-width: 1200px) {
+            .main-visualization-matrix {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .visual-container {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        .visual-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.5rem;
+        }
+
+        .full-row {
+            grid-column: 1 / -1;
+        }
+
+        .formula-card {
+            background: #faf9f8;
+            border-left: 4px solid #107c41;
+            padding: 1rem;
+            font-family: Consolas, monospace;
+            font-size: 0.85rem;
+            color: #a80000;
+            margin: 1rem 0;
+            white-space: pre-wrap;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="top-navbar">
+        <div class="nav-title"><span>📊</span> Enterprise Sales Analysis & DAX Data Modeling Space</div>
+        <div class="workspace-badge">Premium Workspace P1</div>
+    </div>
+
+    <div class="dashboard-layout">
+        <!-- Sidebar Filter Matrix -->
+        <div class="filter-panel">
+            <h3 style="font-size:1.1rem; margin-bottom:1.25rem; border-bottom:1px solid var(--border); padding-bottom:0.5rem;">Slicer Control Panel</h3>
+            
+            <div class="filter-group">
+                <label class="filter-label">Global Business Region</label>
+                <select class="filter-select" id="regionSlicer" onchange="updateDashboardFilter()">
+                    <option value="All">All Regions (Global)</option>
+                    <option value="West">West Corridor</option>
+                    <option value="East">East Corridor</option>
+                    <option value="Central">Central Plains</option>
+                    <option value="South">Southern Hub</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label class="filter-label">Product Category</label>
+                <select class="filter-select" id="categorySlicer" onchange="updateDashboardFilter()">
+                    <option value="All">All Inventory Categories</option>
+                    <option value="Technology">Technology Solutions</option>
+                    <option value="Furniture">Furniture & Fittings</option>
+                    <option value="Office Supplies">Office Consumables</option>
+                </select>
+            </div>
+
+            <div style="background: #fff8df; border: 1px solid #f2c811; padding: 0.75rem; border-radius: 4px; font-size: 0.8rem; color: #403e3d;">
+                <strong>DAX Filter Layer active:</strong> Changing selectors recalculates dynamic semantic measures using explicit row context mappings.
+            </div>
+        </div>
+
+        <!-- Dashboard Content Grid -->
+        <div>
+            <!-- Metrics Row -->
+            <div class="kpi-grid">
+                <div class="bi-kpi-card">
+                    <div class="bi-kpi-title">Sum of Gross Revenue</div>
+                    <div class="bi-kpi-val" id="kpiSales">$2.30M</div>
+                </div>
+                <div class="bi-kpi-card" style="before-color:#107c41;">
+                    <div class="bi-kpi-title">Calculated Net Profit</div>
+                    <div class="bi-kpi-val" id="kpiProfit">$286.51K</div>
+                </div>
+                <div class="bi-kpi-card">
+                    <div class="bi-kpi-title">Blended Margin</div>
+                    <div class="bi-kpi-val" id="kpiMargin">12.48%</div>
+                </div>
+                <div class="bi-kpi-card">
+                    <div class="bi-kpi-title">Average Deal Value</div>
+                    <div class="bi-kpi-val" id="kpiAOV">$458.41</div>
+                </div>
+            </div>
+
+            <!-- Visualization Canvas -->
+            <div class="main-visualization-matrix">
+                <div class="visual-container">
+                    <div class="visual-title">Multi-Quarter Time-Series Revenue Performance Pacing</div>
+                    <div style="height: 300px; position: relative;">
+                        <canvas id="canvasTimeTrend"></canvas>
+                    </div>
+                </div>
+
+                <div class="visual-container">
+                    <div class="visual-title">Category Product Performance Allocation Matrix</div>
+                    <div style="height: 300px; position: relative;">
+                        <canvas id="canvasCategoryAlloc"></canvas>
+                    </div>
+                </div>
+
+                <div class="visual-container full-row">
+                    <div class="visual-title">Semantic Modeling Architecture & Core Enterprise DAX Measures</div>
+                    <p style="font-size:0.95rem; margin-bottom:1rem; color:var(--text-muted);">
+                        The architecture implements an optimized **Star Schema Star Network** with an explicit central transaction table linked to denormalized dimension matrices. Below are the key core measures created to compute real-time cumulative run rates without table scans:
+                    </p>
+                    
+                    <div style="font-weight: 700; font-size:0.9rem; color:var(--text-dark);">1. Advanced YoY Sales Percentage Shifts:</div>
+                    <div class="formula-card">
+YoY_Sales_Variance_ % = 
+VAR CurrentPeriodSales = SUM('Fact_Sales'[SalesAmount])
+VAR PriorPeriodSales = CALCULATE(SUM('Fact_Sales'[SalesAmount]), SAMEPERIODLASTYEAR('Dim_Calendar'[Date]))
+RETURN 
+    DIVIDE(CurrentPeriodSales - PriorPeriodSales, PriorPeriodSales, 0)</div>
+
+                    <div style="font-weight: 700; font-size:0.9rem; color:var(--text-dark);">2. Rolling 12-Month Trailing Margins:</div>
+                    <div class="formula-card">
+Trailing_12M_Net_Profit = 
+CALCULATE(
+    SUM('Fact_Sales'[ProfitAmount]),
+    DATESINPERIOD('Dim_Calendar'[Date], MAX('Dim_Calendar'[Date]), -12, MONTH)
+)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let trendChartObj, allocChartObj;
+
+        const mockDatabase = {
+            All: { sales: "$2.30M", profit: "$286.51K", margin: "12.48%", aov: "$458.41", trend: [0.18, 0.57, 0.60, 0.45, 0.12], catData: [0.84, 0.74, 0.72] },
+            West: { sales: "$0.72M", profit: "$108.41K", margin: "15.05%", aov: "$490.12", trend: [0.05, 0.18, 0.22, 0.15, 0.04], catData: [0.35, 0.20, 0.17] },
+            East: { sales: "$0.68M", profit: "$91.20K", margin: "13.41%", aov: "$465.30", trend: [0.06, 0.16, 0.19, 0.14, 0.03], catData: [0.28, 0.22, 0.18] },
+            Central: { sales: "$0.50M", profit: "$49.10K", margin: "9.82%", aov: "$410.15", trend: [0.04, 0.13, 0.12, 0.10, 0.03], catData: [0.12, 0.21, 0.17] },
+            South: { sales: "$0.39M", profit: "$37.80K", margin: "9.69%", aov: "$425.80", trend: [0.03, 0.10, 0.07, 0.06, 0.02], catData: [0.09, 0.11, 0.20] },
+            Technology: { sales: "$0.84M", profit: "$145.20K", margin: "17.28%", aov: "$540.20", trend: [0.08, 0.22, 0.25, 0.18, 0.04], catData: [0.84, 0, 0] },
+            Furniture: { sales: "$0.74M", profit: "$18.40K", margin: "2.48%", aov: "$610.15", trend: [0.05, 0.19, 0.18, 0.15, 0.03], catData: [0, 0.74, 0] },
+            OfficeSupplies: { sales: "$0.72M", profit: "$122.91K", margin: "17.07%", aov: "$210.45", trend: [0.05, 0.16, 0.17, 0.12, 0.05], catData: [0, 0, 0.72] }
+        };
+
+        function renderVisualizations() {
+            trendChartObj = new Chart(document.getElementById('canvasTimeTrend'), {
+                type: 'line',
+                data: {
+                    labels: ['CY2022 Q1', 'CY22 Q2', 'CY22 Q3', 'CY22 Q4', 'CY23 Q1'],
+                    datasets: [{
+                        label: 'Evaluated Business Sales Volume ($ Millions)',
+                        data: mockDatabase.All.trend,
+                        borderColor: '#0078d4',
+                        backgroundColor: 'rgba(0, 120, 212, 0.05)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.25
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+            });
+
+            allocChartObj = new Chart(document.getElementById('canvasCategoryAlloc'), {
+                type: 'bar',
+                data: {
+                    labels: ['Enterprise Technology', 'Commercial Furniture', 'Office Infrastructure'],
+                    datasets: [{
+                        label: 'Sales Mix Breakdown',
+                        data: mockDatabase.All.catData,
+                        backgroundColor: ['#107c41', '#f2c811', '#b83b1d'],
+                        borderRadius: 4
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+        }
+
+        function updateDashboardFilter() {
+            const reg = document.getElementById('regionSlicer').value;
+            const cat = document.getElementById('categorySlicer').value;
+            
+            let sourceKey = "All";
+            if (reg !== "All") sourceKey = reg;
+            else if (cat !== "All") {
+                sourceKey = cat === "Office Supplies" ? "OfficeSupplies" : cat;
+            }
+
+            const dataSet = mockDatabase[sourceKey];
+            
+            document.getElementById('kpiSales').innerText = dataSet.sales;
+            document.getElementById('kpiProfit').innerText = dataSet.profit;
+            document.getElementById('kpiMargin').innerText = dataSet.margin;
+            document.getElementById('kpiAOV').innerText = dataSet.aov;
+
+            trendChartObj.data.datasets[0].data = dataSet.trend;
+            allocChartObj.data.datasets[0].data = dataSet.catData;
+
+            trendChartObj.update();
+            allocChartObj.update();
+        }
+
+        window.onload = function() {
+            renderVisualizations();
+        };
+    </script>
+</body>
+</html>
